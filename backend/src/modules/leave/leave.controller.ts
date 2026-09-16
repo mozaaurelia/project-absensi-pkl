@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "../../config/database";
+import cloudinary from "../../config/cloudinary";
 import { createNotification } from "../../shared/helpers/createNotification";
 
 export async function listLeaveTypes(req: Request, res: Response) {
@@ -23,7 +24,7 @@ export async function listLeaveTypes(req: Request, res: Response) {
 
 export async function createLeaveRequest(req: Request, res: Response) {
   try {
-    const { leave_type_id, start_date, end_date, reason } = req.body;
+    const { leave_type_id, start_date, end_date, reason, attachment } = req.body;
     const employeeId = req.user.sub;
 
     // count number of days (simple: date difference, doesn't exclude weekends/holidays)
@@ -49,9 +50,22 @@ export async function createLeaveRequest(req: Request, res: Response) {
       });
     }
 
+    // upload attachment (base64 data URL) to Cloudinary if provided
+    let attachmentUrl: string | null = null;
+    if (attachment && typeof attachment === "string") {
+      const dataUri = attachment.includes(",")
+        ? attachment
+        : `data:image/jpeg;base64,${attachment}`;
+      const uploadResult = await cloudinary.uploader.upload(dataUri, {
+        folder: "sams/leave-attachments",
+        resource_type: "auto",
+      });
+      attachmentUrl = uploadResult.secure_url;
+    }
+
     const result = await pool.query(
-      `INSERT INTO leave_requests (company_id, employee_id, leave_type_id, start_date, end_date, total_days, reason, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending') RETURNING *`,
+      `INSERT INTO leave_requests (company_id, employee_id, leave_type_id, start_date, end_date, total_days, reason, attachment_url, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending') RETURNING *`,
       [
         req.user.companyId,
         employeeId,
@@ -60,6 +74,7 @@ export async function createLeaveRequest(req: Request, res: Response) {
         end_date,
         totalDays,
         reason,
+        attachmentUrl,
       ],
     );
 
@@ -97,7 +112,59 @@ export async function myLeaveRequests(req: Request, res: Response) {
   }
 }
 
-export async function approveLeaveRequest(req: Request, res: Response) {
+export async function teamLeaveRequests(req: Request, res: Response) {
+  try {
+    const supervisorId = req.user.sub;
+
+    const result = await pool.query(
+      `SELECT lr.*, lt.name as leave_type_name, e.name as employee_name
+       FROM leave_requests lr
+       JOIN leave_types lt ON lr.leave_type_id = lt.id
+       JOIN employees e ON lr.employee_id = e.id
+       WHERE e.supervisor_id = $1
+       ORDER BY lr.created_at DESC`,
+      [supervisorId],
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("[teamLeaveRequests] Error:", err);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Something went wrong. Please try again later.",
+      },
+    });
+  }
+}
+
+export async function adminLeaveRequests(req: Request, res: Response) {
+  try {
+    const result = await pool.query(
+      `SELECT lr.*, lt.name as leave_type_name, e.name as employee_name, d.name as department_name
+       FROM leave_requests lr
+       JOIN leave_types lt ON lr.leave_type_id = lt.id
+       JOIN employees e ON lr.employee_id = e.id
+       LEFT JOIN departments d ON e.department_id = d.id
+       WHERE lr.company_id = $1
+       ORDER BY lr.created_at DESC`,
+      [req.user.companyId],
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("[adminLeaveRequests] Error:", err);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Something went wrong. Please try again later.",
+      },
+    });
+  }
+}
+
+  export async function approveLeaveRequest(req: Request, res: Response) {
   const { id } = req.params;
   const { approval_note } = req.body;
   const client = await pool.connect();

@@ -5,7 +5,7 @@ import { authorize } from '../../middlewares/authorize';
 
 const router = Router();
 router.get('/employee', authenticate, employeeDashboard);
-router.get('/supervisor', authenticate, authorize('supervisor'), supervisorDashboard);
+router.get('/supervisor', authenticate, authorize('supervisor', 'admin'), supervisorDashboard);
 router.get('/admin', authenticate, authorize('admin'), adminDashboard);
 
 

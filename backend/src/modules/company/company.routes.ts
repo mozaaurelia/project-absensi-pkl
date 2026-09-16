@@ -9,5 +9,7 @@ router.get('/:id', authenticate, requireSuperAdmin, ctrl.getCompanyById);
 router.post('/', authenticate, requireSuperAdmin, ctrl.createCompany);
 router.put('/:id', authenticate, requireSuperAdmin, ctrl.updateCompany);
 router.patch('/:id/status', authenticate, requireSuperAdmin, ctrl.updateCompanyStatus);
+router.post('/:id/invite', authenticate, requireSuperAdmin, ctrl.inviteCompanyAdmin);
+router.delete('/:id', authenticate, requireSuperAdmin, ctrl.deleteCompany);
 
 export default router;

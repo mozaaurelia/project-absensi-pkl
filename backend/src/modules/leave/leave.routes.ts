@@ -7,6 +7,8 @@ const router = Router();
 router.get('/types', authenticate, ctrl.listLeaveTypes);
 router.post('/requests', authenticate, ctrl.createLeaveRequest);
 router.get('/requests/me', authenticate, ctrl.myLeaveRequests);
+router.get('/requests/team', authenticate, authorize('supervisor', 'admin'), ctrl.teamLeaveRequests);
+router.get('/requests', authenticate, authorize('admin'), ctrl.adminLeaveRequests);
 router.patch('/requests/:id/approve', authenticate, authorize('supervisor', 'admin'), ctrl.approveLeaveRequest);
 router.patch('/requests/:id/reject', authenticate, authorize('supervisor', 'admin'), ctrl.rejectLeaveRequest);
 router.get('/quota/:employeeId', authenticate, ctrl.getLeaveQuota);

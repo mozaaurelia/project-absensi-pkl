@@ -10,7 +10,10 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "node-cron": "^4.6.0",
+    "nodemailer": "^9.0.5",
     "pg": "^8.22.0",
+    "resend": "^6.19.0",
+    "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
   "name": "absensi",
@@ -18,7 +21,12 @@
   "main": "app.js",
   "scripts": {
     "dev": "tsx watch server.ts",
-    "seed": "tsx src/database/seed.ts",
+    "seed": "tsx src/database/queries/seed.ts",
+    "seed:testing": "tsx src/database/queries/seedTesting.ts",
+    "seed:mitra": "tsx src/database/queries/seedMitra.ts",
+    "seed:testing:clean": "tsx src/database/queries/seedTestingClean.ts",
+    "reset:testing-attendance": "tsx src/database/queries/resetTestingAttendance.ts",
+    "cron:run": "tsx src/database/queries/runCronManual.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -34,6 +42,7 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^26.1.2",
     "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2"

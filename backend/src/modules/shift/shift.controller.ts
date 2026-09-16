@@ -22,11 +22,18 @@ export async function listShifts(req: Request, res: Response) {
 
 export async function createShift(req: Request, res: Response) {
   try {
-    const { name, start_time, end_time, tolerance_minutes } = req.body;
+    const { name, start_time, end_time, tolerance_minutes, checkin_window_minutes } = req.body;
     const result = await pool.query(
-      `INSERT INTO shifts (company_id, name, start_time, end_time, tolerance_minutes)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [req.user.companyId, name, start_time, end_time, tolerance_minutes ?? 15],
+      `INSERT INTO shifts (company_id, name, start_time, end_time, tolerance_minutes, checkin_window_minutes)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        req.user.companyId,
+        name,
+        start_time,
+        end_time,
+        tolerance_minutes ?? 15,
+        checkin_window_minutes ?? null,
+      ],
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -43,16 +50,18 @@ export async function createShift(req: Request, res: Response) {
 
 export async function updateShift(req: Request, res: Response) {
   try {
-    const { name, start_time, end_time, tolerance_minutes } = req.body;
+    const { name, start_time, end_time, tolerance_minutes, checkin_window_minutes } = req.body;
     const result = await pool.query(
       `UPDATE shifts SET name = COALESCE($1, name), start_time = COALESCE($2, start_time),
-       end_time = COALESCE($3, end_time), tolerance_minutes = COALESCE($4, tolerance_minutes)
-       WHERE id = $5 AND company_id = $6 RETURNING *`,
+       end_time = COALESCE($3, end_time), tolerance_minutes = COALESCE($4, tolerance_minutes),
+       checkin_window_minutes = COALESCE($5, checkin_window_minutes)
+       WHERE id = $6 AND company_id = $7 RETURNING *`,
       [
         name,
         start_time,
         end_time,
         tolerance_minutes,
+        checkin_window_minutes,
         req.params.id,
         req.user.companyId,
       ],

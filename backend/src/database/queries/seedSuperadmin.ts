@@ -1,6 +1,6 @@
-// src/database/seedSuperadmin.ts
+﻿// src/database/queries/seedSuperadmin.ts
 import bcrypt from "bcrypt";
-import { pool } from "../config/database";
+import { pool } from "../../config/database";
 
 async function run() {
   const passwordHash = await bcrypt.hash("superadmin123", 10);
@@ -9,7 +9,7 @@ async function run() {
     ["Platform Owner", "superadmin@sams.com", passwordHash],
   );
   console.log(
-    "✅ SuperAdmin dibuat. Login: superadmin@sams.com / superadmin123",
+    "âœ… SuperAdmin dibuat. Login: superadmin@sams.com / superadmin123",
   );
   process.exit(0);
 }

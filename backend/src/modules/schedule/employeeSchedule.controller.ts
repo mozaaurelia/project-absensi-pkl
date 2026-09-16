@@ -55,9 +55,20 @@ export async function assignSchedule(req: Request, res: Response) {
 export async function endSchedule(req: Request, res: Response) {
   try {
     const { end_date } = req.body;
+    // end_date omitted => end the schedule immediately ("Akhiri sekarang"):
+    // set end_date to yesterday so every "active" predicate
+    // (end_date IS NULL OR end_date >= CURRENT_DATE) turns false right away.
+    // end_date provided => schedule stays valid THROUGH that date (inclusive).
     const result = await pool.query(
-      `UPDATE employee_schedules SET end_date = $1 WHERE id = $2 RETURNING *`,
-      [end_date, req.params.id],
+      `UPDATE employee_schedules es
+       SET end_date = COALESCE($1::date, CURRENT_DATE - 1)
+       WHERE es.id = $2
+         AND EXISTS (
+           SELECT 1 FROM employees e
+           WHERE e.id = es.employee_id AND e.company_id = $3
+         )
+       RETURNING es.*`,
+      [end_date ?? null, req.params.id, req.user.companyId],
     );
     if (result.rows.length === 0)
       return res

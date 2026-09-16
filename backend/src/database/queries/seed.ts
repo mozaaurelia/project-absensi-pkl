@@ -1,5 +1,5 @@
-import bcrypt from "bcrypt";
-import { pool } from "../config/database";
+﻿import bcrypt from "bcrypt";
+import { pool } from "../../config/database";
 
 async function seed() {
   // 1. Bikin 1 company dummy
@@ -25,12 +25,12 @@ async function seed() {
   );
 
   console.log(
-    "✅ Seed data berhasil dibuat. Login: admin@test.com / password123",
+    "âœ… Seed data berhasil dibuat. Login: admin@test.com / password123",
   );
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("❌ Seed gagal:", err);
+  console.error("âŒ Seed gagal:", err);
   process.exit(1);
 });

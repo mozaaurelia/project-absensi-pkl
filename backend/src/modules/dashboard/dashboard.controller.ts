@@ -55,7 +55,12 @@ export async function supervisorDashboard(req: Request, res: Response) {
     const supervisorId = req.user.sub;
 
     const teamToday = await pool.query(
-      `SELECT e.id, e.name, a.status, a.clock_in_time
+      `SELECT
+         COUNT(*)::int as total,
+         COUNT(*) FILTER (WHERE a.status = 'hadir')::int as present,
+         COUNT(*) FILTER (WHERE a.status = 'telat')::int as late,
+         COUNT(*) FILTER (WHERE a.status = 'alpha')::int as absent,
+         COUNT(*) FILTER (WHERE a.clock_in_time IS NULL AND a.status IS NULL)::int as not_checked_in
        FROM employees e
        LEFT JOIN attendances a ON a.employee_id = e.id AND a.clock_in_time >= CURRENT_DATE
        WHERE e.supervisor_id = $1 AND e.status = 'active'`,
@@ -72,7 +77,7 @@ export async function supervisorDashboard(req: Request, res: Response) {
     res.json({
       success: true,
       data: {
-        team_today: teamToday.rows,
+        team_today: teamToday.rows[0] ?? null,
         pending_leave_count: Number(pendingLeaves.rows[0].count),
       },
     });
@@ -98,9 +103,15 @@ export async function adminDashboard(req: Request, res: Response) {
     );
 
     const todayStats = await pool.query(
-      `SELECT status, COUNT(*) as count FROM attendances
-       WHERE company_id = $1 AND clock_in_time >= CURRENT_DATE
-       GROUP BY status`,
+      `SELECT
+         COUNT(*)::int as total,
+         COUNT(*) FILTER (WHERE a.status = 'hadir')::int as present,
+         COUNT(*) FILTER (WHERE a.status = 'telat')::int as late,
+         COUNT(*) FILTER (WHERE a.status = 'alpha')::int as absent,
+         COUNT(*) FILTER (WHERE a.clock_in_time IS NULL AND a.status IS NULL)::int as not_checked_in
+       FROM employees e
+       LEFT JOIN attendances a ON a.employee_id = e.id AND a.clock_in_time >= CURRENT_DATE
+       WHERE e.company_id = $1 AND e.status = 'active'`,
       [companyId],
     );
 
@@ -109,12 +120,18 @@ export async function adminDashboard(req: Request, res: Response) {
       [companyId],
     );
 
+    const pendingOvertime = await pool.query(
+      `SELECT COUNT(*) as count FROM overtime_requests WHERE company_id = $1 AND status = 'pending'`,
+      [companyId],
+    );
+
     res.json({
       success: true,
       data: {
         total_active_employees: Number(totalEmployees.rows[0].count),
-        today_attendance_breakdown: todayStats.rows,
+        today_attendance_breakdown: todayStats.rows[0] ?? null,
         pending_leave_count: Number(pendingLeaves.rows[0].count),
+        pending_overtime_count: Number(pendingOvertime.rows[0].count),
       },
     });
   } catch (err) {
@@ -133,9 +150,10 @@ export async function triggerCronManual(req: Request, res: Response) {
   try {
     const { job } = req.params;
 
-    if (job === "auto-alpha") await autoMarkAlpha();
-    else if (job === "monthly-quota") await monthlyLeaveQuota();
-    else if (job === "monthly-recap") await generateMonthlyRecap();
+    let processed: number;
+    if (job === "auto-alpha") processed = await autoMarkAlpha();
+    else if (job === "monthly-quota") processed = await monthlyLeaveQuota();
+    else if (job === "monthly-recap") processed = await generateMonthlyRecap();
     else
       return res
         .status(400)
@@ -146,7 +164,7 @@ export async function triggerCronManual(req: Request, res: Response) {
 
     res.json({
       success: true,
-      data: { message: `Job ${job} executed manually` },
+      data: { job, processed },
     });
   } catch (err) {
     console.error("[triggerCronManual] Error:", err);
