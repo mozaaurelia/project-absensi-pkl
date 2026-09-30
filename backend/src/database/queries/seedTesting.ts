@@ -19,12 +19,17 @@ import bcrypt from "bcrypt";
 import { pool } from "../../config/database";
 
 // ---------- Email placeholders (TEMP-MAIL â€” bukan alamat asli user) ----------
-const EMAIL_SUPERADMIN = "lahapi7651@joystill.com";
-const EMAIL_ADMIN = "yokafa5745@novelv.com";
+const EMAIL_SUPERADMIN = "lahapi7651@joystill.com";  // password superadmin: *superadmin123*
+const EMAIL_ADMIN = "yokafa5745@novelv.com";         // password karyawan/supervisor/admin: *password123*
 const EMAIL_SUPERVISOR = "mipesa7964@luhupo.com";
 const EMAIL_KARYAWAN1 = "vawik29615@luhupo.com";
 const EMAIL_KARYAWAN2 = "majase5156@neplis.com";
 const EMAIL_KARYAWAN3 = "kareto3124@neplis.com";
+
+// const COMPANY_NAME = "PT Mitra Baru";
+// const EMAIL_ADMIN = "mitraadmin4182@linuq.com";
+// const EMAIL_KARYAWAN = "mitrakaryawan5871@linuq.com";
+// const PASSWORD = "password123";
 
 // ---------- Constants ----------
 const COMPANY_NAME = "PT Testing SAMS";
